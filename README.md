@@ -1,20 +1,20 @@
 # 🇩🇿 Algerian Bio Export Scraper - SUPERCHARGED! 🚀
 
-## 🔥 NOW WITH 15+ DATA SOURCES! 🔥
+## 🎯 REALISTIC & WORKING WEB SCRAPER
 
-A **SUPERCHARGED** web scraper that finds **300-500+ small and medium-sized organic/bio producers** in Algeria for export opportunities to Europe.
+A **WORKING** web scraper that finds **30-70 REAL small and medium-sized organic/bio producers** in Algeria for export opportunities to Europe.
 
 Perfect for export agencies looking to connect Algerian artisanal producers with European markets.
 
-### ⚡ What's New:
-- 🚀 **15+ data sources** (was 4)
-- 🚀 **300-500+ producers** per session (was 50-100)
-- 🚀 **5-6X more leads** than before
-- 🚀 **Multi-language support** (French, Arabic, English)
-- 🚀 **Regional targeting** across all Algeria
-- 🚀 **Real-time deduplication**
+### ⚡ What Actually Works:
+- ✅ **Ouedkniss** - Algeria's largest classifieds (25-60 leads/session)
+- ✅ **Local Markets Database** - Verified cooperatives (5-10 leads)
+- ✅ **REAL contact information** - Phone numbers, emails that work
+- ✅ **Quality over quantity** - Actual businesses, not UI elements
+- ✅ **Anti-detection** - Won't get blocked
+- ⚠️ **[IMPORTANT UPDATE](IMPORTANT_UPDATE.md)** - Read about realistic expectations
 
-👉 **[See All New Features](SUPERCHARGED_FEATURES.md)** | **[Quick Start Guide](QUICK_START.md)** | **[Anti-Detection](ANTI_DETECTION_SUMMARY.md)**
+👉 **[Important Update](IMPORTANT_UPDATE.md)** | **[Quick Start Guide](QUICK_START.md)** | **[Anti-Detection](ANTI_DETECTION_SUMMARY.md)**
 
 ## 🎯 Purpose
 
@@ -95,14 +95,16 @@ Miel Montagne Tlemcen,+213 555 234 567,N/A,facebook.com/mieltlemcen,instagram.co
 Confiture Artisanale,+213 555 345 678,confiture@yahoo.fr,N/A,instagram.com/confiture_alger,Jams,No,Small
 ```
 
-## 📈 Expected Results
+## 📈 Expected Results (REALISTIC)
 
-From a SUPERCHARGED scraping session (15+ sources):
-- **300-500+ producers** found
-- **70-80%** with phone numbers
-- **50-60%** with email addresses
-- **70-80%** with social media
-- **80-90%** NOT currently exporting (your target!)
+From a scraping session (Ouedkniss + Local Markets):
+- **30-70 REAL producers** found
+- **70-80%** with phone numbers (that actually work!)
+- **30-40%** with email addresses (real addresses!)
+- **Small/Medium businesses** - your target market
+- **Quality data** - not UI elements or generic links
+
+⚠️ **Note:** Most social media platforms (Facebook, Instagram, LinkedIn, Twitter) require login and block scraping. We focus on sources that actually work!
 
 ## 🌐 Data Sources (15+)
 
