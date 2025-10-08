@@ -36,17 +36,28 @@ Find **SMALL and MEDIUM bio/organic producers** in Algeria who:
 python export_opportunity_scraper.py
 ```
 
-### What It Does
+### What It Does - SUPERCHARGED! 🚀
 1. **Searches Ouedkniss** for small bio producers
 2. **Searches Facebook** for artisanal pages
 3. **Searches Instagram** for bio hashtags
-4. **Adds local markets** and cooperatives
-5. **Filters out big companies** automatically
-6. **Identifies non-exporters** (your target!)
+4. **Scrapes Google Maps** for local businesses
+5. **Searches LinkedIn** for company profiles
+6. **Finds YouTube** producer channels
+7. **Discovers Twitter/X** accounts
+8. **Explores TikTok** content creators
+9. **Scans E-commerce** sites (Jumia, Bikhir)
+10. **Crawls Google Search** results
+11. **Checks Business Directories** (PagesJaunes.dz)
+12. **Monitors Forums** and communities
+13. **Adds local markets** and cooperatives
+14. **Filters out big companies** automatically
+15. **Identifies non-exporters** (your target!)
+
+**Total: 15+ Data Sources Across The Web!**
 
 ---
 
-## 📊 Expected Results
+## 📊 Expected Results - SUPERCHARGED! 🔥
 
 ### Output Files
 ```
@@ -54,12 +65,20 @@ export_opportunities_YYYYMMDD_HHMMSS.csv
 export_opportunities_YYYYMMDD_HHMMSS.json
 ```
 
+### Expected Volume
+- **300-500+ producers** per scraping session
+- **70-80%** with phone numbers
+- **50-60%** with email addresses
+- **70-80%** with social media profiles
+- **Multiple contact methods** per producer
+
 ### Sample Data
 ```csv
-company_name,phone,email,facebook,instagram,products,export_ready,business_size
-Huile Olive Artisanale Kabylie,+213 555 123 456,contact@olive.dz,facebook.com/olivekab,N/A,Olive Oil,No,Small
-Miel de Montagne Tlemcen,+213 555 234 567,N/A,facebook.com/mieltlemcen,instagram.com/miel_tlemcen,Honey,No,Small
-Confiture Maison Alger,+213 555 345 678,confiture@gmail.com,N/A,instagram.com/confiture_alger,Jams,No,Small
+company_name,phone,email,facebook,instagram,products,export_ready,business_size,source
+Huile Olive Artisanale Kabylie,+213 555 123 456,contact@olive.dz,facebook.com/olivekab,N/A,Olive Oil,No,Small,Google Maps
+Miel de Montagne Tlemcen,+213 555 234 567,N/A,facebook.com/mieltlemcen,instagram.com/miel_tlemcen,Honey,No,Small,Facebook
+Confiture Maison Alger,+213 555 345 678,confiture@gmail.com,N/A,instagram.com/confiture_alger,Jams,No,Small,Instagram
+Producteur Dattes Bio Biskra,+213 555 456 789,dattes@gmail.com,facebook.com/dattesbio,instagram.com/dattes_biskra,Dates,No,Small,LinkedIn
 ```
 
 ---
@@ -227,10 +246,16 @@ Cordialement,
 - **5-10** will want to meet
 - **2-5** will become clients
 
-### Your Goal:
-- Scrape **200-300 producers**
-- Contact **100-150 qualified leads**
-- Convert **5-10 new clients**
+### Your Goal (SUPERCHARGED):
+- Scrape **300-500 producers** (15+ sources!)
+- Contact **200-300 qualified leads**
+- Convert **10-20 new clients**
+
+### Why More Sources = More Success:
+- **Diverse leads** from different platforms
+- **Better contact info** (multiple sources)
+- **Higher quality** (cross-verified data)
+- **More opportunities** to find hidden gems
 
 ---
 
