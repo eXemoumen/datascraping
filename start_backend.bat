@@ -1,0 +1,3 @@
+@echo off
+echo Starting EspaceAgro Backend API...
+python api.py

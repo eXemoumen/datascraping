@@ -11,6 +11,7 @@ import json
 import re
 import random
 import logging
+import sqlite3
 from datetime import datetime
 from typing import List, Dict
 from dataclasses import dataclass, asdict
@@ -50,17 +51,78 @@ class EspaceAgroListing:
 class EspaceAgroScraper:
     """Scraper for EspaceAgro Algeria announcements using existing Chrome session"""
     
-    def __init__(self, chrome_debugger_port: int = 9222):
+    def __init__(self, chrome_debugger_port: int = 9222, db_path: str = "espaceagro.db"):
         """
         Initialize scraper to connect to your existing Chrome session
         
         Args:
             chrome_debugger_port: Port for Chrome remote debugging (default: 9222)
+            db_path: Path to SQLite database
         """
         self.listings: List[EspaceAgroListing] = []
         self.base_url = "https://www.espaceagro.com"
         self.chrome_debugger_port = chrome_debugger_port
         self.driver = None
+        self.db_path = db_path
+        self._init_database()
+    
+    def _init_database(self):
+        """Initialize SQLite database"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS announcements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                member_id TEXT UNIQUE NOT NULL,
+                company_name TEXT,
+                announcement_title TEXT,
+                description TEXT,
+                products TEXT,
+                location TEXT,
+                announcement_type TEXT,
+                announcement_date TEXT,
+                announcement_url TEXT,
+                scraped_date TEXT,
+                notes TEXT,
+                checked INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        conn.close()
+    
+    def _announcement_exists(self, member_id: str) -> bool:
+        """Check if announcement already exists in database"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM announcements WHERE member_id = ?', (member_id,))
+        exists = cursor.fetchone()[0] > 0
+        conn.close()
+        return exists
+    
+    def _save_to_database(self, listing: EspaceAgroListing):
+        """Save listing to database if it doesn't exist"""
+        if self._announcement_exists(listing.member_id):
+            logger.debug(f"  ⏭️  Skipping duplicate: {listing.member_id}")
+            return False
+        
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO announcements 
+            (member_id, company_name, announcement_title, description, products, 
+             location, announcement_type, announcement_date, announcement_url, 
+             scraped_date, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            listing.member_id, listing.company_name, listing.announcement_title,
+            listing.description, listing.products, listing.location,
+            listing.announcement_type, listing.announcement_date,
+            listing.announcement_url, listing.scraped_date, listing.notes
+        ))
+        conn.commit()
+        conn.close()
+        return True
     
     def connect_to_chrome(self):
         """Connect to existing Chrome session"""
@@ -153,10 +215,14 @@ class EspaceAgroScraper:
         for container in listing_containers:
             try:
                 listing = self._parse_listing(container)
-                if listing and listing.announcement_title != "N/A":
-                    self.listings.append(listing)
-                    announcements.append(listing)
-                    logger.info(f"  ✓ {listing.announcement_title[:60]}")
+                if listing and listing.announcement_title != "N/A" and listing.member_id != "N/A":
+                    # Save to database (only if new)
+                    if self._save_to_database(listing):
+                        self.listings.append(listing)
+                        announcements.append(listing)
+                        logger.info(f"  ✓ NEW: {listing.announcement_title[:60]}")
+                    else:
+                        logger.debug(f"  ⏭️  Exists: {listing.announcement_title[:60]}")
             except Exception as e:
                 logger.debug(f"  Skipped listing: {e}")
                 continue
@@ -185,6 +251,9 @@ class EspaceAgroScraper:
             if href.startswith('http'):
                 url = href
             else:
+                # Fix: Add /membres/ prefix to the URL
+                if 'esvoir.asp' in href and '/membres/' not in href:
+                    href = '/membres/' + href.lstrip('/')
                 url = urljoin(self.base_url, href)
         
         # Extract company/business type (fabricant, producteur, etc.)
