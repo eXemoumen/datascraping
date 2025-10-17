@@ -32,7 +32,7 @@ export default function Home() {
   const [scraping, setScraping] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const API_URL = 'http://localhost:5000';
+  const API_URL = 'http://localhost:5001';
 
   useEffect(() => {
     fetchAnnouncements();
@@ -43,10 +43,11 @@ export default function Home() {
     try {
       const response = await fetch(`${API_URL}/api/announcements`);
       const data = await response.json();
-      setAnnouncements(data);
+      setAnnouncements(Array.isArray(data) ? data : []);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching announcements:', error);
+      setAnnouncements([]);
       setLoading(false);
     }
   };
@@ -102,12 +103,14 @@ export default function Home() {
     }
   };
 
-  const filteredAnnouncements = announcements.filter(a =>
-    a.announcement_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.products.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredAnnouncements = Array.isArray(announcements)
+    ? announcements.filter(a =>
+      a.announcement_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.products.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    : [];
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
