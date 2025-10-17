@@ -32,11 +32,13 @@ export default function Home() {
   const [scraping, setScraping] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const API_URL = 'http://localhost:5001';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+  const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
   useEffect(() => {
     fetchAnnouncements();
     fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchAnnouncements = async () => {
@@ -142,13 +144,15 @@ export default function Home() {
 
           {/* Controls */}
           <div className="flex gap-4 mb-6">
-            <button
-              onClick={startScraping}
-              disabled={scraping}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {scraping ? 'Scraping...' : 'Start Scraping'}
-            </button>
+            {!IS_PRODUCTION && (
+              <button
+                onClick={startScraping}
+                disabled={scraping}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {scraping ? 'Scraping...' : 'Start Scraping'}
+              </button>
+            )}
             <input
               type="text"
               placeholder="Search announcements..."

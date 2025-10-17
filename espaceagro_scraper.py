@@ -170,25 +170,27 @@ class EspaceAgroScraper:
                 url = f"{base_search_url}?page={page_num}&TRI=&laction3=3&pays=Algerie&num=0&dm=&exp=&_LETYPEE=&activite=&sdr="
                 
                 # Navigate to page
+                logger.info(f"Navigating to: {url}")
                 self.driver.get(url)
                 
                 # Wait for page to load
-                time.sleep(3)
+                time.sleep(5)  # Increased wait time
+                logger.info(f"Page loaded, current URL: {self.driver.current_url}")
                 
                 # Get page source and parse
                 page_source = self.driver.page_source
                 soup = BeautifulSoup(page_source, 'html.parser')
                 
                 # Find announcement listings
-                announcements = self._extract_announcements(soup, page_num)
+                new_announcements, total_found = self._extract_announcements(soup, page_num)
                 
-                if not announcements:
+                if total_found == 0:
                     logger.warning(f"No announcements found on page {page_num}")
                     if page_num > 1:
                         logger.info("Reached end of results")
                         break
                 
-                logger.info(f"✓ Found {len(announcements)} announcements on page {page_num}")
+                logger.info(f"✓ Found {total_found} announcements on page {page_num} ({new_announcements} new)")
                 
                 # Random delay between pages (be respectful)
                 if page_num < max_pages:
@@ -203,23 +205,31 @@ class EspaceAgroScraper:
         
         logger.info(f"\n✓ Total announcements scraped: {len(self.listings)}")
     
-    def _extract_announcements(self, soup: BeautifulSoup, page_num: int) -> List[EspaceAgroListing]:
-        """Extract announcement data from page"""
-        announcements = []
+    def _extract_announcements(self, soup: BeautifulSoup, page_num: int) -> tuple:
+        """Extract announcement data from page. Returns (new_count, total_count)"""
+        new_count = 0
+        total_count = 0
         
         # EspaceAgro uses specific div structure for announcements
         listing_containers = soup.find_all('div', class_=re.compile(r'contanier-fluid M40 PB15'))
         
-        logger.debug(f"Found {len(listing_containers)} announcement containers")
+        logger.info(f"Found {len(listing_containers)} announcement containers on page {page_num}")
+        
+        # If no containers found, try alternative selectors
+        if len(listing_containers) == 0:
+            logger.warning("No containers with 'contanier-fluid M40 PB15' found, trying alternatives...")
+            listing_containers = soup.find_all('div', class_=re.compile(r'M40'))
+            logger.info(f"Found {len(listing_containers)} containers with 'M40' class")
         
         for container in listing_containers:
             try:
                 listing = self._parse_listing(container)
                 if listing and listing.announcement_title != "N/A" and listing.member_id != "N/A":
+                    total_count += 1
                     # Save to database (only if new)
                     if self._save_to_database(listing):
                         self.listings.append(listing)
-                        announcements.append(listing)
+                        new_count += 1
                         logger.info(f"  ✓ NEW: {listing.announcement_title[:60]}")
                     else:
                         logger.debug(f"  ⏭️  Exists: {listing.announcement_title[:60]}")
@@ -227,7 +237,7 @@ class EspaceAgroScraper:
                 logger.debug(f"  Skipped listing: {e}")
                 continue
         
-        return announcements
+        return new_count, total_count
     
     def _parse_listing(self, container) -> EspaceAgroListing:
         """Parse individual listing"""
