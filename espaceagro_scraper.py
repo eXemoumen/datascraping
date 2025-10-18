@@ -151,7 +151,7 @@ class EspaceAgroScraper:
         if self.driver:
             self.driver.quit()
         
-    def scrape_algeria_announcements(self, max_pages: int = 10):
+    def scrape_algeria_announcements(self, max_pages: int = 999):
         """Scrape announcements from Algeria using logged-in Chrome session"""
         logger.info("=== Scraping EspaceAgro Algeria Announcements ===")
         
@@ -164,33 +164,59 @@ class EspaceAgroScraper:
         
         for page_num in range(1, max_pages + 1):
             try:
-                logger.info(f"\n📄 Scraping page {page_num}/{max_pages}")
+                logger.info(f"\n📄 Scraping page {page_num}...")
                 
                 # Build URL with parameters
-                url = f"{base_search_url}?page={page_num}&TRI=&laction3=3&pays=Algerie&num=0&dm=&exp=&_LETYPEE=&activite=&sdr="
+                # num parameter is the offset: (page_num - 1) * 40
+                num_offset = (page_num - 1) * 40
+                url = f"{base_search_url}?page={page_num}&TRI=&laction3=3&pays=Algerie&num={num_offset}&dm=&exp=&_LETYPEE=&activite=&sdr="
                 
                 # Navigate to page
                 logger.info(f"Navigating to: {url}")
-                self.driver.get(url)
+                try:
+                    self.driver.set_page_load_timeout(30)  # 30 second timeout
+                    self.driver.get(url)
+                    logger.info(f"✓ Page loaded, current URL: {self.driver.current_url}")
+                except Exception as e:
+                    logger.error(f"⚠️  Page load timeout or error: {e}")
+                    logger.info("Retrying page...")
+                    time.sleep(5)
+                    try:
+                        self.driver.get(url)
+                    except:
+                        logger.error(f"❌ Failed to load page {page_num}, skipping...")
+                        continue
                 
                 # Wait for page to load
-                time.sleep(5)  # Increased wait time
-                logger.info(f"Page loaded, current URL: {self.driver.current_url}")
+                time.sleep(3)
                 
                 # Get page source and parse
+                logger.info(f"📄 Parsing page HTML...")
                 page_source = self.driver.page_source
+                
+                # Check if page loaded properly
+                if len(page_source) < 1000:
+                    logger.warning(f"⚠️  Page seems too small ({len(page_source)} bytes), might not have loaded properly")
+                    logger.info("Waiting 5 more seconds...")
+                    time.sleep(5)
+                    page_source = self.driver.page_source
+                
                 soup = BeautifulSoup(page_source, 'html.parser')
                 
                 # Find announcement listings
                 new_announcements, total_found = self._extract_announcements(soup, page_num)
                 
                 if total_found == 0:
-                    logger.warning(f"No announcements found on page {page_num}")
+                    logger.warning(f"❌ No announcements found on page {page_num}")
                     if page_num > 1:
-                        logger.info("Reached end of results")
+                        logger.info("🏁 Reached end of results - no more pages!")
+                        break
+                    else:
+                        logger.error("❌ No announcements found on first page! Check if you're logged in.")
                         break
                 
                 logger.info(f"✓ Found {total_found} announcements on page {page_num} ({new_announcements} new)")
+                logger.info(f"📊 Progress: {len(self.listings)} total announcements scraped so far")
                 
                 # Random delay between pages (be respectful)
                 if page_num < max_pages:
@@ -198,9 +224,16 @@ class EspaceAgroScraper:
                     logger.info(f"⏳ Waiting {delay:.1f}s before next page...")
                     time.sleep(delay)
                     
+            except KeyboardInterrupt:
+                logger.info(f"\n⚠️  Scraping interrupted by user at page {page_num}")
+                logger.info(f"✓ Saved {len(self.listings)} announcements so far")
+                break
             except Exception as e:
-                logger.error(f"Error on page {page_num}: {e}")
-                time.sleep(5)
+                logger.error(f"❌ Error on page {page_num}: {e}")
+                logger.info("Waiting 10 seconds before retrying...")
+                time.sleep(10)
+                # Try to continue to next page instead of retrying same page
+                logger.info("Skipping to next page...")
                 continue
         
         logger.info(f"\n✓ Total announcements scraped: {len(self.listings)}")
@@ -213,13 +246,20 @@ class EspaceAgroScraper:
         # EspaceAgro uses specific div structure for announcements
         listing_containers = soup.find_all('div', class_=re.compile(r'contanier-fluid M40 PB15'))
         
-        logger.info(f"Found {len(listing_containers)} announcement containers on page {page_num}")
+        logger.info(f"🔍 Found {len(listing_containers)} announcement containers on page {page_num}")
         
         # If no containers found, try alternative selectors
         if len(listing_containers) == 0:
-            logger.warning("No containers with 'contanier-fluid M40 PB15' found, trying alternatives...")
+            logger.warning("⚠️  No containers with 'contanier-fluid M40 PB15' found, trying alternatives...")
             listing_containers = soup.find_all('div', class_=re.compile(r'M40'))
-            logger.info(f"Found {len(listing_containers)} containers with 'M40' class")
+            logger.info(f"🔍 Found {len(listing_containers)} containers with 'M40' class")
+            
+            # If still nothing, save HTML for debugging
+            if len(listing_containers) == 0:
+                logger.error(f"❌ No containers found at all on page {page_num}!")
+                with open(f'debug_page_{page_num}.html', 'w', encoding='utf-8') as f:
+                    f.write(str(soup))
+                logger.info(f"💾 Saved page HTML to debug_page_{page_num}.html")
         
         for container in listing_containers:
             try:
@@ -232,7 +272,7 @@ class EspaceAgroScraper:
                         new_count += 1
                         logger.info(f"  ✓ NEW: {listing.announcement_title[:60]}")
                     else:
-                        logger.debug(f"  ⏭️  Exists: {listing.announcement_title[:60]}")
+                        logger.info(f"  ⏭️  Exists: {listing.announcement_title[:60]}")
             except Exception as e:
                 logger.debug(f"  Skipped listing: {e}")
                 continue
@@ -429,8 +469,8 @@ def main():
         return
     
     try:
-        # Scrape Algeria announcements (adjust max_pages as needed)
-        scraper.scrape_algeria_announcements(max_pages=10)
+        # Scrape Algeria announcements (will continue until no more pages)
+        scraper.scrape_algeria_announcements(max_pages=999)
         
         # Save results
         scraper.save_results()

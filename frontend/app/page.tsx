@@ -31,6 +31,9 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [scraping, setScraping] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [filterLocation, setFilterLocation] = useState('all');
+  const [statusCheckInterval, setStatusCheckInterval] = useState<NodeJS.Timeout | null>(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
   const IS_PRODUCTION = process.env.NODE_ENV === 'production';
@@ -94,25 +97,55 @@ export default function Home() {
         if (!status.running) {
           clearInterval(checkStatus);
           setScraping(false);
-          fetchAnnouncements();
-          fetchStats();
-          alert(status.message);
+          // Auto-reload data when scraping completes
+          await fetchAnnouncements();
+          await fetchStats();
+          alert(status.message + '\n\nPage will refresh to show new results!');
+          window.location.reload();
         }
       }, 2000);
+
+      setStatusCheckInterval(checkStatus);
     } catch (error) {
       console.error('Error starting scrape:', error);
       setScraping(false);
     }
   };
 
+  const stopScraping = () => {
+    if (statusCheckInterval) {
+      clearInterval(statusCheckInterval);
+      setStatusCheckInterval(null);
+    }
+    setScraping(false);
+    // Reload data to show what was scraped so far
+    fetchAnnouncements();
+    fetchStats();
+    alert('Scraping stopped! Showing results scraped so far.');
+  };
+
   const filteredAnnouncements = Array.isArray(announcements)
-    ? announcements.filter(a =>
-      a.announcement_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.products.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    ? announcements.filter(a => {
+      // Search filter
+      const matchesSearch = searchTerm === '' ||
+        a.announcement_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.products.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Type filter
+      const matchesType = filterType === 'all' || a.announcement_type === filterType;
+
+      // Location filter
+      const matchesLocation = filterLocation === 'all' || a.location === filterLocation;
+
+      return matchesSearch && matchesType && matchesLocation;
+    })
     : [];
+
+  // Get unique types and locations for filters
+  const uniqueTypes = Array.from(new Set(announcements.map(a => a.announcement_type))).filter(Boolean);
+  const uniqueLocations = Array.from(new Set(announcements.map(a => a.location))).filter(Boolean);
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -143,23 +176,99 @@ export default function Home() {
           </div>
 
           {/* Controls */}
-          <div className="flex gap-4 mb-6">
+          <div className="space-y-4 mb-6">
+            {/* Scraping Buttons */}
             {!IS_PRODUCTION && (
-              <button
-                onClick={startScraping}
-                disabled={scraping}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {scraping ? 'Scraping...' : 'Start Scraping'}
-              </button>
+              <div className="flex gap-4">
+                <button
+                  onClick={startScraping}
+                  disabled={scraping}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {scraping ? '🔄 Scraping...' : '▶️ Start Scraping'}
+                </button>
+                {scraping && (
+                  <button
+                    onClick={stopScraping}
+                    className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700"
+                  >
+                    ⏹️ Stop Scraping
+                  </button>
+                )}
+                <button
+                  onClick={() => { fetchAnnouncements(); fetchStats(); }}
+                  className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"
+                >
+                  🔄 Refresh Data
+                </button>
+              </div>
             )}
-            <input
-              type="text"
-              placeholder="Search announcements..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+
+            {/* Search and Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <input
+                type="text"
+                placeholder="🔍 Search announcements..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Types</option>
+                {uniqueTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+
+              <select
+                value={filterLocation}
+                onChange={(e) => setFilterLocation(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Locations</option>
+                {uniqueLocations.map(location => (
+                  <option key={location} value={location}>{location}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Active Filters Display */}
+            {(searchTerm || filterType !== 'all' || filterLocation !== 'all') && (
+              <div className="flex gap-2 items-center text-sm">
+                <span className="text-gray-600">Active filters:</span>
+                {searchTerm && (
+                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                    Search: &ldquo;{searchTerm}&rdquo;
+                  </span>
+                )}
+                {filterType !== 'all' && (
+                  <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full">
+                    Type: {filterType}
+                  </span>
+                )}
+                {filterLocation !== 'all' && (
+                  <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full">
+                    Location: {filterLocation}
+                  </span>
+                )}
+                <button
+                  onClick={() => { setSearchTerm(''); setFilterType('all'); setFilterLocation('all'); }}
+                  className="text-red-600 hover:text-red-800 ml-2"
+                >
+                  ✕ Clear all
+                </button>
+              </div>
+            )}
+
+            {/* Results Count */}
+            <div className="text-sm text-gray-600">
+              Showing {filteredAnnouncements.length} of {announcements.length} announcements
+            </div>
           </div>
         </div>
 

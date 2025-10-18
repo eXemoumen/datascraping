@@ -83,18 +83,25 @@ def start_scraping():
         global scraping_status
         try:
             scraping_status = {"running": True, "message": "Scraping in progress..."}
+            logger.info("🚀 Starting scraper subprocess...")
+            
+            # Don't capture output so it shows in terminal
             result = subprocess.run(
                 ['python', 'espaceagro_scraper.py'],
-                capture_output=True,
-                text=True,
-                timeout=600
+                timeout=3600  # 1 hour timeout
             )
             
             if result.returncode == 0:
+                logger.info("✅ Scraping completed successfully!")
                 scraping_status = {"running": False, "message": "Scraping completed successfully"}
             else:
-                scraping_status = {"running": False, "message": f"Scraping failed: {result.stderr}"}
+                logger.error(f"❌ Scraping failed with return code: {result.returncode}")
+                scraping_status = {"running": False, "message": f"Scraping failed with code {result.returncode}"}
+        except subprocess.TimeoutExpired:
+            logger.error("⏱️ Scraping timeout after 1 hour")
+            scraping_status = {"running": False, "message": "Scraping timeout after 1 hour"}
         except Exception as e:
+            logger.error(f"❌ Error: {str(e)}")
             scraping_status = {"running": False, "message": f"Error: {str(e)}"}
     
     thread = threading.Thread(target=run_scraper)
